@@ -274,8 +274,14 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         if (this.indicatorCommand != null && !this.indicatorCommand.isNone())
         {
             // Indicator, keep lane change desire above (or equal to) dCoop so others cooperate
-            params.setParameter(LmrsParameters.DLEFT, Math.max(dLeft, dCoop));
-            params.setParameter(LmrsParameters.DRIGHT, Math.max(dRight, dCoop));
+            if (this.indicatorCommand.isLeft())
+            {
+                params.setParameter(LmrsParameters.DLEFT, Math.max(dLeft, dCoop));
+            }
+            else
+            {
+                params.setParameter(LmrsParameters.DRIGHT, Math.max(dRight, dCoop));
+            }
             this.syncState = Synchronizable.State.INDICATING;
         }
         else
