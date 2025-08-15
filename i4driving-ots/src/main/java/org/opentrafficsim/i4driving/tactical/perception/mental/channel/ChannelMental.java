@@ -15,7 +15,7 @@ public interface ChannelMental extends Mental
 
     /** Distance discount. */
     ParameterTypeLength X0_D = new ParameterTypeLength("x0_d", "Distance discount range",
-            Length.instantiateSI(126.77), NumericConstraint.POSITIVEZERO);
+            Length.instantiateSI(119.98), NumericConstraint.POSITIVEZERO);
 
     /**
      * Returns the perception delay belonging to a perception channel.
