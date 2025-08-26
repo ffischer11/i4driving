@@ -9,6 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -757,6 +758,19 @@ public final class OpenDriveParser
                     }
                 }
             }
+        }
+        // filter discontinuities that are too close together
+        Iterator<Double> it = discontinuities.iterator();
+        double prev = Double.NEGATIVE_INFINITY;
+        while (it.hasNext())
+        {
+            double next = it.next();
+            if (next - prev < 1e-3)
+            {
+                System.out.println(String.format("Removing s=%f as next is %f on road %s", prev, next, road.getName()));
+                it.remove();
+            }
+            prev = next;
         }
         // sometimes there are road marks defined starting at the very end, skip these
         return discontinuities.subSet(0.0, true, road.getLength().si, false);
