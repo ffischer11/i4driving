@@ -952,7 +952,7 @@ public class OtsTransceiver
             }
             else if (eventType.equals(SimulatorInterface.STOP_EVENT))
             {
-                if (this.runUntil != null && this.simulator.getSimulatorTime().eq(this.runUntil))
+                if (this.runUntil != null) // && this.simulator.getSimulatorTime().eq(this.runUntil))
                 {
                     this.runUntil = null;
                     sentReadyMessage(this.progressMessageId, true);
