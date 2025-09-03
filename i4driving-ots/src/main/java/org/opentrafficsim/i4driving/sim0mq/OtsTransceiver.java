@@ -38,6 +38,7 @@ import org.djutils.event.EventListener;
 import org.djutils.event.EventType;
 import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.logger.CategoryLogger;
+import org.djutils.metadata.MetaData;
 import org.djutils.serialization.EndianUtil;
 import org.djutils.serialization.SerializationException;
 import org.djutils.serialization.TypedMessage;
@@ -424,6 +425,7 @@ public class OtsTransceiver
                             {
                             }
                         }
+                        this.simulator.scheduleEventAbs(until, () -> fireProgressedEvent());
                         this.simulator.runUpToAndIncluding(until);
                         this.progressMessageId = (int) payload[6];
                         this.runUntil = until;
@@ -840,7 +842,8 @@ public class OtsTransceiver
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
-            this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
+            //this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
+            this.simulator.addListener(this, PROGRESSED_EVENT);
 
             String simulationString;
             SimulationType simulationType;
@@ -959,6 +962,15 @@ public class OtsTransceiver
                 }
                 // if not, stopped for some other reason, perhaps a stop button in the GUI
             }
+            else if (eventType.equals(PROGRESSED_EVENT))
+            {
+                if (this.runUntil == null)
+                {
+                    System.err.println("PROGRESSED_EVENT but no runUntil value");
+                }
+                this.runUntil = null;
+                sentReadyMessage(this.progressMessageId, true);
+            }
         }
 
         /**
@@ -1076,6 +1088,14 @@ public class OtsTransceiver
         {
             this.network.addListener(this, Network.GTU_ADD_EVENT);
             this.network.addListener(this, Network.GTU_REMOVE_EVENT);
+        }
+        
+        /**
+         * Fire PROGRESSED_EVENT.
+         */
+        private void fireProgressedEvent()
+        {
+            this.simulator.fireEvent(PROGRESSED_EVENT);
         }
     }
 
@@ -1208,5 +1228,8 @@ public class OtsTransceiver
         /** OTS XML simulation. */
         OTS;
     }
+
+    /** Event when simulator has ran up to a time. */
+    EventType PROGRESSED_EVENT = new EventType(new MetaData("PROGRESSED", "Simulation ran up to PROGRESS time."));
 
 }
