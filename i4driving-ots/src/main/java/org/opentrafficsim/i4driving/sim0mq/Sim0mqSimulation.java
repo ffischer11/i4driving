@@ -168,6 +168,7 @@ public interface Sim0mqSimulation
                 if (prev.getEndNode().equals(link.getStartNode()) && isOnRoad(prev, roadId))
                 {
                     upstream(prev, roadId, nodes);
+                    return;
                 }
             }
         }
@@ -189,11 +190,13 @@ public interface Sim0mqSimulation
                 {
                     if (isOnRoad(next, roadIds.get(roadIndex)))
                     {
+                        // next link is from same road
                         downstream(next, roadIndex, roadIds, nodes);
                         return;
                     }
                     else if (roadIndex < roadIds.size() - 1 && isOnRoad(next, roadIds.get(roadIndex + 1)))
                     {
+                        // next link is from next road
                         downstream(next, roadIndex + 1, roadIds, nodes);
                         return;
                     }
