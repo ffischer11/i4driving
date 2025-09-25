@@ -523,7 +523,7 @@ public final class OpenDriveParser
                 linkData.sTo / linkData.road.getLength().si);
         if (!forward)
         {
-            Map<Double, Double> data = new LinkedHashMap<>();
+            SortedMap<Double, Double> data = new TreeMap<>();
             for (double f : roadOffset.getFractionalLengths())
             {
                 data.put(f, roadOffset.get(f));
@@ -535,6 +535,7 @@ public final class OpenDriveParser
         FractionalLengthData prevEdgeOffset =
                 getEdgeOffset(linkData.laneSection.getCenter().getLane().get(0).getBorderOrWidth(), linkData.sFrom,
                         linkData.sTo, linkData.laneSection.getS(), linkData.sEndLaneSection, roadOffset, offsetSign);
+        prevEdgeOffset = cleanupLengthData(prevEdgeOffset);
         PolyLine2d prevEdge = forward ? linkData.linkDesignLine.flattenOffset(prevEdgeOffset, FLATTENER)
                 : linkData.linkDesignLine.flattenOffset(prevEdgeOffset, FLATTENER).reverse();
         TRoadLanesLaneSectionLcrLaneRoadMark centerMark =
@@ -1014,6 +1015,16 @@ public final class OpenDriveParser
             }
         }
         remove.forEach((f) -> map.remove(f));
+    }
+    
+    private FractionalLengthData cleanupLengthData(FractionalLengthData data) {
+    	TreeMap<Double, Double> m = new TreeMap<Double, Double>();
+    	double[] k = data.getFractionalLengthsAsArray(), v = data.getValuesAsArray();
+    	for(int i = 0; i < k.length; i++) {
+    		m.put(k[i], v[i]);
+    	}
+    	cleanOffSetMap(m);
+    	return new FractionalLengthData(m);
     }
 
     /**
