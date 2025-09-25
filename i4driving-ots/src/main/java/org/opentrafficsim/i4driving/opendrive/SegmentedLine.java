@@ -50,7 +50,7 @@ public class SegmentedLine implements ContinuousLine
             else if (geom.getArc() != null)
             {
                 double curvature = geom.getArc().getCurvature();
-                line = new ContinuousArc(start, 1.0 / Math.abs(curvature), curvature > 0.0, geom.getLength().si);
+                line = new ContinuousArc2(start, 1.0 / Math.abs(curvature), curvature > 0.0, geom.getLength().si);
             }
             else if (geom.getSpiral() != null)
             {

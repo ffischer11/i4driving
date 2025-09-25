@@ -112,11 +112,11 @@ public final class OpenDriveParser
     /** Lane types that are included. */
     private static final Set<ELaneType> LANE_TYPES = Set.of(ELaneType.BIKING, ELaneType.BUS, ELaneType.CONNECTING_RAMP,
             ELaneType.DRIVING, ELaneType.ENTRY, ELaneType.EXIT, ELaneType.HOV, ELaneType.OFF_RAMP, ELaneType.ON_RAMP,
-            ELaneType.SHOULDER, ELaneType.BORDER, ELaneType.STOP, ELaneType.NONE, ELaneType.RESTRICTED);
+            ELaneType.SHOULDER, ELaneType.BORDER, ELaneType.STOP, ELaneType.RESTRICTED);
 
     /** Lane types that are parsed to shoulders. */
     private static final Set<ELaneType> SHOULDER_TYPES =
-            Set.of(ELaneType.SHOULDER, ELaneType.BORDER, ELaneType.STOP, ELaneType.NONE, ELaneType.RESTRICTED);
+            Set.of(ELaneType.SHOULDER, ELaneType.BORDER, ELaneType.STOP, ELaneType.RESTRICTED);
 
     /** Shoulder lane type. */
     private static final LaneType SHOULDER = new LaneType("Shoulder");
@@ -369,7 +369,7 @@ public final class OpenDriveParser
             {
                 id = this.linkIdGenerator;
             }
-
+            
             // design line of the entire road
             SegmentedLine roadDesignLine = new SegmentedLine(road.getPlanView().getGeometry(), road.getLength());
             PolyLine2d roadCenterLine = roadDesignLine.flatten(FLATTENER);
@@ -521,15 +521,6 @@ public final class OpenDriveParser
         // center mark
         FractionalLengthData roadOffset = OffsetData.sub(linkData.roadOffset, linkData.sFrom / linkData.road.getLength().si,
                 linkData.sTo / linkData.road.getLength().si);
-        if (!forward)
-        {
-            Map<Double, Double> data = new LinkedHashMap<>();
-            for (double f : roadOffset.getFractionalLengths())
-            {
-                data.put(f, roadOffset.get(f));
-            }
-            roadOffset = new FractionalLengthData(data);
-        }
 
         double offsetSign = forward ? -1.0 : 1.0;
         FractionalLengthData prevEdgeOffset =
@@ -584,8 +575,8 @@ public final class OpenDriveParser
      * @param roadSpeed speed on road
      * @param roadOffset offset on road level
      * @param linkDesignLine design line of the link
-     * @param sFrom link from-fraction on road
-     * @param sTo link to-fraction on road
+     * @param sFrom link from distance on road
+     * @param sTo link to distance on road
      * @param sEndLaneSection fraction on road where the lane section stops (can be &gt; sTo due to other discontinuities)
      * @param laneSection lane section on road
      */
