@@ -497,7 +497,12 @@ public class OtsTransceiver
             {
                 parameterMap.put((String) payload[index++], payload[index++]);
             }
-            Route route = this.network.getRoute((String) payload[index++]);
+            String routeName = (String) payload[index++];
+            Route route = this.network.getRoute(routeName);
+            if(route == null) {
+            	CategoryLogger.always().error("Cannot place vehicle '" + id + "', route '" + routeName + "' is not defined in routes.json");
+            	return;
+            }
 
             this.externallyGeneratedGtuId = id;
             if (running)
