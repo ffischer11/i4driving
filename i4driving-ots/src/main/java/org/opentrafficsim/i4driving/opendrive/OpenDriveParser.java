@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -81,6 +82,7 @@ import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
 import org.opentrafficsim.road.network.lane.LaneType;
 import org.opentrafficsim.road.network.lane.Shoulder;
 import org.opentrafficsim.road.network.lane.Stripe;
+import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -525,8 +527,10 @@ public final class OpenDriveParser
         // TODO elevation road.getElevationProfile()
         FractionalLengthData elevation = FractionalLengthData.of(0.0, 0.0);
         PolyLine2d linkLine = forward ? linkData.linkDesignLine.flatten() : linkData.linkDesignLine.flatten().reverse();
+        // Note: according to ASAM, KEEPRIGHT is the default value if rule is not specified. 
+        LaneKeepingPolicy rule = Objects.requireNonNullElse(linkData.road.getRule(), LaneKeepingPolicy.KEEPRIGHT);
         CrossSectionLink link = new CrossSectionLink(this.net, linkData.id.get(), forward ? startNode : endNode,
-                forward ? endNode : startNode, linkData.linkType, new OtsLine2d(linkLine), elevation, linkData.road.getRule());
+                forward ? endNode : startNode, linkData.linkType, new OtsLine2d(linkLine), elevation, rule);
 
         // center mark
         FractionalLengthData roadOffset = OffsetData.sub(linkData.roadOffset, linkData.sFrom / linkData.road.getLength().si,
