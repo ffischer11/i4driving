@@ -37,3 +37,4 @@ jobs:
         body: "Current version of i4driving OTS"
         allowUpdates: true
         name: "v0.0.1"
+        tag: "v0.0.1"
