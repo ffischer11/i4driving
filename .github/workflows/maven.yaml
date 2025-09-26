@@ -22,9 +22,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - run: mkdir staging && cp target/*.jar staging
+      run: cd i4driving-ots && mvn -B package --file pom.xml
+    - run: cd i4driving-ots && mkdir staging && cp target/*.jar staging
     - uses: actions/upload-artifact@v4
       with:
         name: 'OTS-i4driving'
-        path: staging
+        path: i4driving-ots/staging
