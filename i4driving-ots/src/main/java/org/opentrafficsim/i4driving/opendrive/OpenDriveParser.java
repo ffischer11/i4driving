@@ -308,13 +308,13 @@ public final class OpenDriveParser
 
     /**
      * Returns the node that was created at the side of the road of given id from which traffic can enter the network.
-     * @param roadId road id
+     * @param roadName road name, or Id if it doesn't have one
      * @param designDirection direction on road for origin
      * @return node that was created at the side of the road of given id from which traffic can enter the network
      */
-    public Node getOrigin(final String roadId, final boolean designDirection)
+    public Node getOrigin(final String roadName, final boolean designDirection)
     {
-        Map<Boolean, Node> map = this.origins.get(roadId);
+        Map<Boolean, Node> map = this.origins.get(roadName);
         if (map.size() == 1)
         {
             return map.values().iterator().next();
@@ -324,18 +324,26 @@ public final class OpenDriveParser
 
     /**
      * Returns the node that was created at the side of the road of given id from which traffic can exit the network.
-     * @param roadId road id
+     * @param roadName road name, or Id if it doesn't have one
      * @param designDirection direction on road for origin
      * @return node that was created at the side of the road of given id from which traffic can exit the network
      */
-    public Node getDestination(final String roadId, final boolean designDirection)
+    public Node getDestination(final String roadName, final boolean designDirection)
     {
-        Map<Boolean, Node> map = this.destinations.get(roadId);
+        Map<Boolean, Node> map = this.destinations.get(roadName);
         if (map.size() == 1)
         {
             return map.values().iterator().next();
         }
         return map.get(designDirection);
+    }
+    
+    /** Gets the nicest possible way to refer to the road.
+     * If the road has a name, returns that name.
+     * Otherwise returns its id.
+     */
+    static public String getNameOrId(TRoad road) {
+    	return (road.getName().isBlank() ? road.getId() : road.getName());
     }
 
     /**
@@ -362,8 +370,10 @@ public final class OpenDriveParser
             Supplier<String> id;
             if (road.getId() != null && !road.getId().isBlank())
             {
-                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(road.getId() + "_")
-                        : () -> road.getId(); // just '1', or '1A', '1B', etc. when multiple links from this road
+            	final String nameOrId = getNameOrId(road); 
+            	
+                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(nameOrId + "_")
+                        : () -> nameOrId; // just '1', or '1A', '1B', etc. when multiple links from this road
             }
             else
             {
@@ -393,7 +403,7 @@ public final class OpenDriveParser
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
                 if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
-                    this.origins.computeIfAbsent(road.getId(), (s) -> new LinkedHashMap<>()).put(true, startNodeForward);
+                    this.origins.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(true, startNodeForward);
                 }
             }
             if (backward)
@@ -404,7 +414,7 @@ public final class OpenDriveParser
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
                 if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
-                    this.destinations.computeIfAbsent(road.getId(), (s) -> new LinkedHashMap<>()).put(false, startNodeBackward);
+                    this.destinations.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(false, startNodeBackward);
                 }
             }
 
@@ -466,7 +476,7 @@ public final class OpenDriveParser
 
             if (forward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
-                this.destinations.computeIfAbsent(road.getId(), (s) -> new LinkedHashMap<>()).put(true, endNodeForward);
+                this.destinations.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(true, endNodeForward);
                 for (Link link : endNodeForward.getLinks())
                 {
                     if (link.getEndNode().equals(endNodeForward) && link instanceof CrossSectionLink cLink)
@@ -481,7 +491,7 @@ public final class OpenDriveParser
             }
             if (backward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
-                this.origins.computeIfAbsent(road.getId(), (s) -> new LinkedHashMap<>()).put(false, endNodeBackward);
+                this.origins.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(false, endNodeBackward);
             }
         }
     }
