@@ -1042,6 +1042,23 @@ public class OtsTransceiver
             payload[3] = new FloatLengthVector(y);
             payload[4] = new FloatDurationVector(t);
             payload[5] = new FloatAccelerationVector(a);
+            switch (((LaneBasedGtu) gtu).getTurnIndicatorStatus())
+            {
+                case LEFT:
+                    payload[6] = "Left";
+                    break;
+                case RIGHT:
+                    payload[6] = "Right";
+                    break;
+                case NONE:
+                    payload[6] = "None";
+                    break;
+                case HAZARD:
+                    payload[6] = "Both";
+                    break;
+                default:
+                    payload[6] = "None";
+            }
 
             try
             {
