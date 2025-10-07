@@ -109,7 +109,6 @@ import picocli.CommandLine.Option;
  */
 @Command(description = "OTS Transceiver for co-simulation", name = "OTS", mixinStandardHelpOptions = true,
         showDefaultValues = true, version = "20250619")
-// TODO indicator in PLAN message
 public class OtsTransceiver
 {
 
