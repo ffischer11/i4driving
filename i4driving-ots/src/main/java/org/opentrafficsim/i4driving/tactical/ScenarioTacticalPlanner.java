@@ -393,10 +393,6 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void setAcceleration(final Acceleration acceleration)
     {
-        if (getGtu().getId().contains("Florian"))
-        {
-            System.out.println("hmmm?");
-        }
         this.accelerationCommand = acceleration;
         interruptMove(getGtu().getLocation());
     }
