@@ -176,8 +176,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             for (RelativeLane lane : lanes)
             {
                 // On the current lane, consider all incentives. On adjacent lanes only consider incentives beyond the distance
-                // over
-                // which a lane change is not yet possible, i.e. the merge distance.
+                // over which a lane change is not yet possible, i.e. the merge distance.
                 // TODO: consider route in incentives (only if not on current lane?)
                 Length mergeDistance = lane.isCurrent() ? Length.ZERO
                         : Synchronization.getMergeDistance(getPerception(), lane.getLateralDirectionality());
@@ -256,12 +255,12 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             simplePlan.setTurnIndicator(getGtu());
 
             // create plan
-            OperationalPlan operationalPlan =
-                    LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
-            this.lastIntendedPlan = operationalPlan;
-            this.syncState = this.lmrsData.getSynchronizationState();
             if (!this.deadReckoning)
             {
+                OperationalPlan operationalPlan =
+                        LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+                this.lastIntendedPlan = operationalPlan;
+                this.syncState = this.lmrsData.getSynchronizationState();
                 return operationalPlan;
             }
         }
@@ -333,6 +332,17 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         if (lc != null)
         {
             getGtu().changeLaneInstantaneously(lc);
+            // set referenceLaneIndex to null to finalize any ongoing lane change
+            try
+            {
+                Field referenceLaneIndexField = LaneBasedGtu.class.getDeclaredField("referenceLaneIndex");
+                referenceLaneIndexField.setAccessible(true);
+                referenceLaneIndexField.set(getGtu(), 0);
+            }
+            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            {
+                // ignore
+            }
         }
     }
 
