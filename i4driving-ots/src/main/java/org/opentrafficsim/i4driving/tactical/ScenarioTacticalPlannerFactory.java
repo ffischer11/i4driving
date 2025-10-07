@@ -346,6 +346,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         parameters.setDefaultParameters(LmrsParameters.class);
         parameters.setDefaultParameters(AbstractIdm.class);
         parameters.setDefaultParameters(ConflictUtilTmp.class);
+        parameters.setDefaultParameter(ParameterTypes.T0);
         parameters.setDefaultParameter(ParameterTypes.PERCEPTION);
         parameters.setDefaultParameter(ParameterTypes.LOOKBACK);
         parameters.setDefaultParameter(ParameterTypes.LOOKAHEAD);
