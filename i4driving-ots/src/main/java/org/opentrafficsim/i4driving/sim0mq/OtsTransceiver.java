@@ -1034,7 +1034,7 @@ public class OtsTransceiver
                 a[i] = (float) segments.get(i).acceleration().si;
             }
 
-            Object[] payload = new Object[6];
+            Object[] payload = new Object[7];
             payload[0] = gtuId;
             payload[1] = speed;
             payload[2] = new FloatLengthVector(x);
