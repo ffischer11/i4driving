@@ -2,8 +2,10 @@ package org.opentrafficsim.i4driving.summerschool;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +36,8 @@ import org.djutils.cli.CliUtil;
 import org.djutils.draw.line.PolyLine2d;
 import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.event.Event;
+import org.djutils.event.EventListener;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.animation.colorer.FixedColor;
 import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
@@ -48,6 +52,7 @@ import org.opentrafficsim.core.geometry.ContinuousStraight;
 import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
@@ -56,6 +61,8 @@ import org.opentrafficsim.draw.graphs.ContourDataSource;
 import org.opentrafficsim.draw.graphs.GraphPath;
 import org.opentrafficsim.draw.graphs.GraphPath.Section;
 import org.opentrafficsim.draw.graphs.TrajectoryPlot;
+import org.opentrafficsim.i4driving.demo.AttentionAnimation;
+import org.opentrafficsim.i4driving.demo.AttentionAnimation.ChannelAttention;
 import org.opentrafficsim.i4driving.demo.AttentionColorer;
 import org.opentrafficsim.i4driving.demo.StopCollisionDetector;
 import org.opentrafficsim.i4driving.demo.TaskSaturationChannelColorer;
@@ -78,6 +85,7 @@ import org.opentrafficsim.kpi.sampling.meta.FilterDataSet;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.generator.headway.ArrivalsHeadwayGenerator.HeadwayDistribution;
+import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
@@ -107,6 +115,7 @@ import org.opentrafficsim.swing.graphs.SwingTrajectoryPlot;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.script.AbstractSimulationScript;
 
+import nl.tudelft.simulation.dsol.animation.d2.Renderable2d;
 import nl.tudelft.simulation.dsol.swing.gui.TablePanel;
 import picocli.CommandLine.Mixin;
 
@@ -154,6 +163,10 @@ public class ScenarioConflict extends AbstractSimulationScript
                 new TaskSaturationChannelColorer(), new AttentionColorer());
         setGtuColorer(colorer);
     }
+
+    /** Rendered GTUs. */
+    protected Map<LaneBasedGtu, Renderable2d<ChannelAttention>> animatedGTUs =
+            Collections.synchronizedMap(new LinkedHashMap<>());
 
     @Override
     protected RoadNetwork setupSimulation(final OtsSimulatorInterface sim) throws Exception
@@ -237,7 +250,47 @@ public class ScenarioConflict extends AbstractSimulationScript
         od.putDemandVector(nodeC, nodeD, Category.UNCATEGORIZED, new FrequencyVector(demand, FrequencyUnit.PER_HOUR));
         OdApplier.applyOd(network, od, options, DefaultsRoadNl.VEHICLES);
 
+        // Attention animation
+        EventListener ev = new EventListener()
+        {
+            /** */
+            private static final long serialVersionUID = 20251007L;
+
+            @Override
+            public void notify(final Event event) throws RemoteException
+            {
+                LaneBasedGtu gtu = (LaneBasedGtu) network.getGTU((String) event.getContent());
+                if (event.getType().equals(Network.GTU_ADD_EVENT))
+                {
+                    // schedule the addition of the GTU to prevent it from not having an operational plan
+                    gtu.getSimulator().scheduleEventNow(ScenarioConflict.this, "animateGTU", new Object[] {gtu});
+                    // ScenarioConflict.this.animatedGTUs.put(gtu, new AttentionAnimation(gtu, gtu.getSimulator()));
+                }
+                else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
+                {
+                    if (ScenarioConflict.this.animatedGTUs.containsKey(gtu))
+                    {
+                        ScenarioConflict.this.animatedGTUs.get(gtu).destroy(gtu.getSimulator());
+                        ScenarioConflict.this.animatedGTUs.remove(gtu);
+                    }
+                }
+            }
+        };
+        network.addListener(ev, Network.GTU_ADD_EVENT);
+        network.addListener(ev, Network.GTU_REMOVE_EVENT);
+
         return network;
+    }
+
+    /**
+     * Draw the attention.
+     * @param gtu the GTU to draw the attention of
+     */
+    @SuppressWarnings("unused") // scheduled
+    private void animateGTU(final LaneBasedGtu gtu)
+    {
+        Renderable2d<ChannelAttention> gtuAnimation = new AttentionAnimation(new ChannelAttention(gtu), gtu.getSimulator());
+        this.animatedGTUs.put(gtu, gtuAnimation);
     }
 
     /**
