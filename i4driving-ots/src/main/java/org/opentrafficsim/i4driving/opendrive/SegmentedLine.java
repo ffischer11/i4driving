@@ -41,6 +41,11 @@ public class SegmentedLine implements ContinuousLine
     {
         for (TRoadPlanViewGeometry geom : geometry)
         {
+        	if(geom.getLength().si < 1e-6) {
+        		// skip extremely short geometry elements; they will lead to problems later
+        		continue; 
+        	}
+        	
             ContinuousLine line;
             OrientedPoint2d start = new OrientedPoint2d(geom.getX(), geom.getY(), geom.getHdg());
             if (geom.getLine() != null)
