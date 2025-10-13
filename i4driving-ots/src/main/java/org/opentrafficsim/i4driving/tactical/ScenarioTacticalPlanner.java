@@ -103,6 +103,9 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     /** Speed for dead-reckoning. */
     private Speed deadReckoningSpeed;
 
+    /** Acceleration for dead-reckoning. */
+    private Acceleration deadReckoningAcceleration;
+
     /** Time of last model execution to set model parameters for surrounding vehicle while dead reckoning. */
     private Time lastDeadReckoningModelExecution;
 
@@ -295,16 +298,16 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
         // Create operational plan from current position
         changeLaneOnDeadReckoning(locationAtStartTime);
-        boolean toStandStill = this.accelerationCommand.lt0()
-                && this.deadReckoningSpeed.si / -this.accelerationCommand.si < DEAD_RECKONING_HORIZON.si;
-        double t = toStandStill ? this.deadReckoningSpeed.si / -this.accelerationCommand.si : DEAD_RECKONING_HORIZON.si;
-        double distance = Math.max(1.0, this.deadReckoningSpeed.si * t + .5 * this.accelerationCommand.si * t * t);
+        boolean toStandStill = this.deadReckoningAcceleration.lt0()
+                && this.deadReckoningSpeed.si / -this.deadReckoningAcceleration.si < DEAD_RECKONING_HORIZON.si;
+        double t = toStandStill ? this.deadReckoningSpeed.si / -this.deadReckoningAcceleration.si : DEAD_RECKONING_HORIZON.si;
+        double distance = Math.max(1.0, this.deadReckoningSpeed.si * t + .5 * this.deadReckoningAcceleration.si * t * t);
         double x = locationAtStartTime.x + Math.cos(locationAtStartTime.dirZ) * distance;
         double y = locationAtStartTime.y - Math.sin(locationAtStartTime.dirZ) * distance;
         OtsLine2d path = new OtsLine2d(locationAtStartTime, new Point2d(x, y));
+        // Segments.off takes care of standstill
         return new OperationalPlan(getGtu(), path, startTime,
-                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.accelerationCommand)); // takes care of
-                                                                                                          // standstill
+                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.deadReckoningAcceleration));
     }
 
     /**
@@ -646,7 +649,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     {
         this.deadReckoning = true;
         this.deadReckoningSpeed = speed;
-        this.accelerationCommand = accel;
+        this.deadReckoningAcceleration = accel;
         interruptMove(location);
     }
 
