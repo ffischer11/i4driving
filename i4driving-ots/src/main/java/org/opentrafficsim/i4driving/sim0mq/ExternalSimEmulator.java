@@ -257,9 +257,10 @@ public final class ExternalSimEmulator
                             {
                                 // Trajectory senders
                                 TrajectorySender ts1 = new TrajectorySender("Ego 1", EXTERNAL_FREQUENCY, startX1, startY1,
-                                        gtuSpeed, Acceleration.instantiateSI(0.5), Duration.instantiateSI(5.0));
+                                        gtuSpeed, Acceleration.instantiateSI(0.5), Duration.instantiateSI(5.0), null);
                                 TrajectorySender ts2 = new TrajectorySender("Ego 2", EXTERNAL_FREQUENCY, startX2, startY2,
-                                        gtuSpeed, Acceleration.instantiateSI(-0.5), Duration.instantiateSI(3.0));
+                                        gtuSpeed, Acceleration.instantiateSI(-0.5), Duration.instantiateSI(3.0),
+                                        Duration.instantiateSI(5.0));
                                 this.trajectorySenders.put("Ego 1", ts1);
                                 this.trajectorySenders.put("Ego 2", ts2);
                             }
@@ -394,7 +395,7 @@ public final class ExternalSimEmulator
                 events[5] = Long.MAX_VALUE;
                 CategoryLogger.always().debug("ExternalSim sent ACTIVE vehicle message");
                 TrajectorySender ts =
-                        new TrajectorySender("Pedestrian", EXTERNAL_FREQUENCY, x, y, v, Acceleration.ZERO, Duration.ZERO);
+                        new TrajectorySender("Pedestrian", EXTERNAL_FREQUENCY, x, y, v, Acceleration.ZERO, Duration.ZERO, null);
                 ts.start();
                 this.trajectorySenders.put("Pedestrian", ts);
             }
@@ -513,6 +514,9 @@ public final class ExternalSimEmulator
             /** Acceleration time. */
             private final Duration accelerationTime;
 
+            /** Handover time to OTS control. */
+            private final Duration handoverTime;
+
             /** Disables the trajectory from sending more messages. */
             private boolean active;
 
@@ -546,10 +550,11 @@ public final class ExternalSimEmulator
              * @param startSpeed start speed
              * @param acceleration acceleration in first phase
              * @param accelerationTime duration of first phase
+             * @param handoverTime handover time to OTS control
              */
             TrajectorySender(final String gtuId, final Frequency frequency, final Length startPositionX,
                     final Length startPositionY, final Speed startSpeed, final Acceleration acceleration,
-                    final Duration accelerationTime)
+                    final Duration accelerationTime, final Duration handoverTime)
             {
                 this.gtuId = gtuId;
                 this.startSpeed = startSpeed;
@@ -557,6 +562,7 @@ public final class ExternalSimEmulator
                 this.startPositionY = startPositionY;
                 this.acceleration = acceleration;
                 this.accelerationTime = accelerationTime;
+                this.handoverTime = handoverTime;
                 this.interval = (long) (1000.0 / frequency.si);
             }
 
@@ -574,6 +580,27 @@ public final class ExternalSimEmulator
                         // Kinematics
                         this.executionTime = currentTime;
                         double dt = (currentTime - this.startTime) / 1000.0;
+
+                        if (this.handoverTime != null && dt >= this.handoverTime.si)
+                        {
+                            // hand over control to OTS and stop sending updates
+                            try
+                            {
+                                CategoryLogger.always().debug("ExternalSim sent MODE message for " + this.gtuId);
+                                Object[] payload = new Object[] {this.gtuId, "Ots"};
+                                Worker.this.responder.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, OTS, EXTERNAL_SIM,
+                                        "MODE", Worker.this.messageId++, payload), ZMQ.DONTWAIT);
+                                this.active = false;
+                                break;
+                            }
+                            catch (Sim0MQException | SerializationException e)
+                            {
+                                System.err.println("Stopping trajectory sender for GTU " + this.gtuId + " due to exception:");
+                                e.printStackTrace();
+                                this.active = false;
+                            }
+                        }
+
                         Speed speed;
                         Acceleration accel;
                         Length positionX;
