@@ -3,6 +3,7 @@ package org.opentrafficsim.i4driving.sim0mq;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.logger.CategoryLogger;
 import org.djutils.multikeymap.MultiKeyMap;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
@@ -15,6 +16,7 @@ import org.opentrafficsim.road.gtu.generator.GtuSpawner;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.network.RoadNetwork;
+import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 
@@ -74,7 +76,10 @@ public class GtuSpawnerOd
         LaneBasedGtuCharacteristics templateGtuType = new LaneBasedGtuCharacteristics(overwrittenBaseCharacteristics,
                 standardTemplate.getStrategicalPlannerFactory(), route, standardTemplate.getOrigin(),
                 standardTemplate.getDestination(), standardTemplate.getVehicleModel());
-        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, NetworkUtil.getLanePosition(this.network, position));
+        LanePosition lanePos = NetworkUtil.getLanePosition(this.network, position);
+        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, lanePos);
+        CategoryLogger.always().debug("Spawn GTU " + id + " at position " + position + " : Matched to lane "
+        + lanePos.lane().getLink().getId() + ":" + lanePos.lane().getId() + " length = " + lanePos.position());
     }
 
     /**

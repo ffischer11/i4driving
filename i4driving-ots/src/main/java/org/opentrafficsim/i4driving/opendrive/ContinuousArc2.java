@@ -15,6 +15,25 @@ import org.opentrafficsim.core.geometry.ContinuousArc;
  */
 public class ContinuousArc2 extends ContinuousArc
 {
+	private static Method getPoint_;
+	private static Field sign_;
+	private static Field angle_;
+	static {
+		try {
+			getPoint_ = ContinuousArc.class.getDeclaredMethod("getPoint", double.class, double.class);
+			getPoint_.setAccessible(true);
+			
+			sign_ = ContinuousArc.class.getDeclaredField("sign");
+			sign_.setAccessible(true);
+
+			angle_ = ContinuousArc.class.getDeclaredField("angle");
+			angle_.setAccessible(true);
+			
+		} catch (NoSuchMethodException | NoSuchFieldException | SecurityException e) {
+			// TODO Auto-generated catch block
+			throw new RuntimeException("Unable to initialize ContinuousArc2");
+		}
+	}
 
     /**
      * Define arc by starting point, radius, curve direction, and length.
@@ -33,24 +52,17 @@ public class ContinuousArc2 extends ContinuousArc
     {
         try
         {
-            Method method = ContinuousArc.class.getDeclaredMethod("getPoint", double.class, double.class);
-            method.setAccessible(true);
-            Point2d point = (Point2d) method.invoke(this, 1.0, 0.0); // getPoint(1.0, 0.0);
+            Point2d point = (Point2d) getPoint_.invoke(this, 1.0, 0.0); // getPoint(1.0, 0.0);
 
-            Field signField = ContinuousArc.class.getDeclaredField("sign");
-            signField.setAccessible(true);
-            double sign = signField.getDouble(this); // this.sign
+            double sign = sign_.getDouble(this); // this.sign
 
-            Field angleField = ContinuousArc.class.getDeclaredField("angle");
-            angleField.setAccessible(true);
-            Angle angle = (Angle) angleField.get(this); // this.angle
+            Angle angle = (Angle) angle_.get(this); // this.angle
 
             double dirZ = getStartPoint().dirZ + sign * angle.si;
             dirZ = dirZ > Math.PI ? dirZ - 2.0 * Math.PI : (dirZ < -Math.PI ? dirZ + 2.0 * Math.PI : dirZ); // bug in parent
             return new OrientedPoint2d(point.x, point.y, dirZ);
         }
-        catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | NoSuchFieldException
-                | SecurityException ex)
+        catch (IllegalAccessException | InvocationTargetException | SecurityException ex)
         {
             throw new RuntimeException("Unable to create endPoint for ContinuousArc");
         }
