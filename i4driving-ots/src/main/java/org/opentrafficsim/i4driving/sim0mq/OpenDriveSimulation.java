@@ -58,6 +58,7 @@ public class OpenDriveSimulation implements Sim0mqSimulation
      * @param simulator simulator
      * @param tacticalFactory tactical planner factory
      * @param networkString OpenDRIVE string
+     * @param useRoadName whether to use the road name to identify origins and destinations
      * @throws JAXBException
      * @throws SAXException
      * @throws ParserConfigurationException
@@ -66,10 +67,10 @@ public class OpenDriveSimulation implements Sim0mqSimulation
      * @throws GtuException
      */
     public OpenDriveSimulation(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory,
-            final String networkString) throws JAXBException, SAXException, ParserConfigurationException, NetworkException,
-            OtsGeometryException, GtuException
+            final String networkString, final boolean useRoadName) throws JAXBException, SAXException,
+            ParserConfigurationException, NetworkException, OtsGeometryException, GtuException
     {
-        this.parser = OpenDriveParser.parseFileString(networkString);
+        this.parser = OpenDriveParser.parseFileString(networkString).setUseRoadName(useRoadName);
         this.network = new RoadNetwork("OtsOpenDriveNetwork", simulator);
         this.parser.build(this.network);
 

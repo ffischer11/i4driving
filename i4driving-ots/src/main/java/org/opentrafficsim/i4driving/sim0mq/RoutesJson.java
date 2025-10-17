@@ -29,6 +29,9 @@ public class RoutesJson
         /** Object ids in the route. */
         @JsonAdapter(ScalarAsListAdapter.class)
         private List<String> objects;
+
+        /** Whether to use the shortest route. */
+        private boolean shortest = false;
     }
 
     /**
@@ -43,10 +46,25 @@ public class RoutesJson
     {
         for (RouteJson routeJson : this.routes)
         {
-            List<Node> nodes = simulation.getRouteObjectType().getNodes(network, routeJson.objects);
-            Throw.when(nodes == null || nodes.isEmpty(), NetworkException.class,
-                    "Unable to find nodes for route defined by objects %s.", routeJson.objects);
-            Route route = new Route(routeJson.id, gtuType, nodes);
+            Route route;
+            if (routeJson.shortest)
+            {
+                // Simplified route construction by just the first and last link of the route
+                Node startNode = network.getNode(simulation.getOrigin(routeJson.objects.getFirst(), null));
+                Node endNode = network.getNode(simulation.getDestination(routeJson.objects.getLast(), null));
+
+                Route temp = network.getShortestRouteBetween(gtuType, startNode, endNode);
+                Throw.when(temp == null || temp.size() == 0, NetworkException.class,
+                        "Unable to find nodes for route defined by first and last links: %s.", routeJson.objects);
+                route = new Route(routeJson.id, gtuType, temp.getNodes());
+            }
+            else
+            {
+                List<Node> nodes = simulation.getRouteObjectType().getNodes(network, routeJson.objects);
+                Throw.when(nodes == null || nodes.isEmpty(), NetworkException.class,
+                        "Unable to find nodes for route defined by objects %s.", routeJson.objects);
+                route = new Route(routeJson.id, gtuType, nodes);
+            }
             network.addRoute(gtuType, route);
         }
     }
