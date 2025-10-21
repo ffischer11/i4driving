@@ -140,6 +140,11 @@ public class OtsTransceiver
     @Option(names = "--idPrefix", description = "Prefix to ID of generated traffic.", defaultValue = "OTS_")
     private String idPrefix;
 
+    /** Whether to use the road name to identify origins and destinations. */
+    @Option(names = "--useRoadName", description = "Whether to use the road name to identify origins and destinations.",
+            defaultValue = "false")
+    private boolean useRoadName;
+
     /** Mixed in model arguments. */
     @Mixin
     private ScenarioTacticalPlannerFactory tacticalFactory = new ScenarioTacticalPlannerFactory();
@@ -854,7 +859,7 @@ public class OtsTransceiver
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
-            //this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
+            // this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
             this.simulator.addListener(this, PROGRESSED_EVENT);
 
             String simulationString;
@@ -1118,7 +1123,7 @@ public class OtsTransceiver
             this.network.addListener(this, Network.GTU_ADD_EVENT);
             this.network.addListener(this, Network.GTU_REMOVE_EVENT);
         }
-        
+
         /**
          * Fire PROGRESSED_EVENT.
          */
@@ -1189,7 +1194,7 @@ public class OtsTransceiver
                     {
                         case OPEN_DRIVE:
                             this.simulation = new OpenDriveSimulation(this.simulator, OtsTransceiver.this.tacticalFactory,
-                                    this.simulationString);
+                                    this.simulationString, OtsTransceiver.this.useRoadName);
                             break;
                         case FOSIM:
                             // TODO parse Fosim string

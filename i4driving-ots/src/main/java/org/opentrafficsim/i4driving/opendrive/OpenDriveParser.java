@@ -164,6 +164,9 @@ public final class OpenDriveParser
     /** Stored nodes by their connection definition, so links can share nodes where they connect between roads. */
     private Map<Connection, Node> nodeMap = new LinkedHashMap<>();
 
+    /** Whether to use the road name. */
+    private boolean useRoadName = false;
+
     /** Origin nodes by their road id. */
     private Map<String, Map<Boolean, Node>> origins = new LinkedHashMap<>();
 
@@ -177,6 +180,17 @@ public final class OpenDriveParser
     private OpenDriveParser(final OpenDRIVE openDrive)
     {
         this.openDrive = openDrive;
+    }
+
+    /**
+     * Sets whether to use the road name to identify origins and destinations.
+     * @param useRoadName whether to use the road name to identify origins and destinations
+     * @return parser for method chaining
+     */
+    public OpenDriveParser setUseRoadName(final boolean useRoadName)
+    {
+        this.useRoadName = useRoadName;
+        return this;
     }
 
     /**
@@ -310,8 +324,8 @@ public final class OpenDriveParser
 
     /**
      * Returns the node that was created at the side of the road of given id from which traffic can enter the network.
-     * @param roadName road name, or Id if it doesn't have one
-     * @param designDirection direction on road for origin
+     * @param roadId road id
+     * @param designDirection direction on road for origin, may be {@code null} if the road is not an origin in both directions
      * @return node that was created at the side of the road of given id from which traffic can enter the network
      */
     public Node getOrigin(final String roadName, final boolean designDirection)
@@ -326,8 +340,9 @@ public final class OpenDriveParser
 
     /**
      * Returns the node that was created at the side of the road of given id from which traffic can exit the network.
-     * @param roadName road name, or Id if it doesn't have one
-     * @param designDirection direction on road for origin
+     * @param roadId road id
+     * @param designDirection direction on road for destination, my be {@code null} if the road is not a destination in both
+     *            directions
      * @return node that was created at the side of the road of given id from which traffic can exit the network
      */
     public Node getDestination(final String roadName, final boolean designDirection)
@@ -346,6 +361,16 @@ public final class OpenDriveParser
      */
     static public String getNameOrId(TRoad road) {
     	return (road.getName().isBlank() ? road.getId() : road.getName());
+    }
+
+    /**
+     * Returns the identifier for the road by which origins and destinations are identified.
+     * @param road road tag
+     * @return the identifier for the road by which origins and destinations are identified
+     */
+    private String odRoadIdentifier(final TRoad road)
+    {
+        return this.useRoadName && road.getName() != null && !road.getName().isBlank() ? road.getName() : road.getId();
     }
 
     /**
@@ -381,7 +406,7 @@ public final class OpenDriveParser
             {
                 id = this.linkIdGenerator;
             }
-            
+
             // design line of the entire road
             SegmentedLine roadDesignLine = new SegmentedLine(road.getPlanView().getGeometry(), road.getLength());
             PolyLine2d roadCenterLine = roadDesignLine.flatten(FLATTENER);
@@ -405,7 +430,8 @@ public final class OpenDriveParser
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
                 if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
-                    this.origins.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(true, startNodeForward);
+                    this.origins.computeIfAbsent(odRoadIdentifier(road), (s) -> new LinkedHashMap<>()).put(true,
+                            startNodeForward);
                 }
             }
             if (backward)
@@ -416,7 +442,8 @@ public final class OpenDriveParser
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
                 if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
-                    this.destinations.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(false, startNodeBackward);
+                    this.destinations.computeIfAbsent(odRoadIdentifier(road), (s) -> new LinkedHashMap<>()).put(false,
+                            startNodeBackward);
                 }
             }
 
@@ -478,7 +505,8 @@ public final class OpenDriveParser
 
             if (forward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
-                this.destinations.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(true, endNodeForward);
+                this.destinations.computeIfAbsent(odRoadIdentifier(road), (s) -> new LinkedHashMap<>()).put(true,
+                        endNodeForward);
                 for (Link link : endNodeForward.getLinks())
                 {
                     if (link.getEndNode().equals(endNodeForward) && link instanceof CrossSectionLink cLink)
@@ -527,10 +555,10 @@ public final class OpenDriveParser
         // TODO elevation road.getElevationProfile()
         FractionalLengthData elevation = FractionalLengthData.of(0.0, 0.0);
         PolyLine2d linkLine = forward ? linkData.linkDesignLine.flatten() : linkData.linkDesignLine.flatten().reverse();
-        // Note: according to ASAM, KEEPRIGHT is the default value if rule is not specified. 
-        LaneKeepingPolicy rule = Objects.requireNonNullElse(linkData.road.getRule(), LaneKeepingPolicy.KEEPRIGHT);
+        // OpenDRIVE standard: if "rule" not given in <road>, then RHT is assumed
+        LaneKeepingPolicy laneKeeping = linkData.road.getRule() == null ? LaneKeepingPolicy.KEEPRIGHT : linkData.road.getRule();
         CrossSectionLink link = new CrossSectionLink(this.net, linkData.id.get(), forward ? startNode : endNode,
-                forward ? endNode : startNode, linkData.linkType, new OtsLine2d(linkLine), elevation, rule);
+                forward ? endNode : startNode, linkData.linkType, new OtsLine2d(linkLine), elevation, laneKeeping);
 
         // center mark
         FractionalLengthData roadOffset = OffsetData.sub(linkData.roadOffset, linkData.sFrom / linkData.road.getLength().si,
@@ -640,7 +668,7 @@ public final class OpenDriveParser
                     : linkData.linkDesignLine.flattenOffset(center, FLATTENER).reverse();
             Polygon2d contour = getContour(prevEdge, nextEdge);
             List<CrossSectionSlice> slices =
-                    getSlices(prevEdgeOffset, nextEdgeOffset, Length.instantiateSI(laneCenterLine.getLength()));
+                    getSlices(prevEdgeOffset, nextEdgeOffset, Length.instantiateSI(laneCenterLine.getLength()), forward);
             if (SHOULDER_TYPES.contains(lane.getType()))
             {
                 new Shoulder(link, id, new OtsLine2d(laneCenterLine), contour, slices, SHOULDER);
@@ -705,7 +733,7 @@ public final class OpenDriveParser
                     : linkDesignLine.flattenOffset(nextOffset, FLATTENER).reverse();
             Polygon2d markContour = LaneGeometryUtil.getContour(prevLine, nextLine);
             List<CrossSectionSlice> markSlices =
-                    getSlices(prevOffset, nextOffset, Length.instantiateSI(centerLine.getLength()));
+                    getSlices(prevOffset, nextOffset, Length.instantiateSI(centerLine.getLength()), forward);
             new Stripe(type, link, new OtsLine2d(centerLine), markContour, markSlices);
         }
     }
@@ -1060,17 +1088,18 @@ public final class OpenDriveParser
      * @return list of slices
      */
     private static List<CrossSectionSlice> getSlices(final FractionalLengthData prev, final FractionalLengthData next,
-            final Length length)
+            final Length length, final boolean forward)
     {
         List<CrossSectionSlice> out = new ArrayList<>();
         NavigableSet<Double> fractions = new TreeSet<>();
         prev.getFractionalLengths().forEach((f) -> fractions.add(f));
         next.getFractionalLengths().forEach((f) -> fractions.add(f));
+        double directionSign = forward ? 1.0 : -1.0;
         for (double f : fractions)
         {
             double oPrev = prev.get(f);
             double oNext = next.get(f);
-            out.add(new CrossSectionSlice(length.times(f), Length.instantiateSI((oPrev + oNext) / 2.0),
+            out.add(new CrossSectionSlice(length.times(f), Length.instantiateSI(directionSign * (oPrev + oNext) / 2.0),
                     Length.instantiateSI(Math.abs(oNext - oPrev))));
         }
         return out;
