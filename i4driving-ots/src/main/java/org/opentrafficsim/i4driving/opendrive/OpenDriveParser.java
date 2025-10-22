@@ -327,7 +327,7 @@ public final class OpenDriveParser
      * @param designDirection direction on road for origin, may be {@code null} if the road is not an origin in both directions
      * @return node that was created at the side of the road of given id from which traffic can enter the network
      */
-    public Node getOrigin(final String roadId, final boolean designDirection)
+    public Node getOrigin(final String roadId, final Boolean designDirection)
     {
         Map<Boolean, Node> map = this.origins.get(roadId);
         if (map.size() == 1)
@@ -340,11 +340,11 @@ public final class OpenDriveParser
     /**
      * Returns the node that was created at the side of the road of given id from which traffic can exit the network.
      * @param roadId road id
-     * @param designDirection direction on road for destination, my be {@code null} if the road is not a destination in both
+     * @param designDirection direction on road for destination, may be {@code null} if the road is not a destination in both
      *            directions
      * @return node that was created at the side of the road of given id from which traffic can exit the network
      */
-    public Node getDestination(final String roadId, final boolean designDirection)
+    public Node getDestination(final String roadId, final Boolean designDirection)
     {
         Map<Boolean, Node> map = this.destinations.get(roadId);
         if (map.size() == 1)
