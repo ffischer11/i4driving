@@ -329,6 +329,7 @@ public class OtsTransceiver
                             this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
                                     new Object[] {id, loc, speed, acceleration});
                         }
+                        // CategoryLogger.always().debug("Ots received EXTERNAL message for GTU " + id);
                     }
                     else if ("VEHICLE".equals(message.getMessageTypeId()))
                     {
@@ -696,7 +697,7 @@ public class OtsTransceiver
             Commands.Command command = this.gson.fromJson(json, Commands.Command.class);
             Function<String, CommandsHandler> function =
                     (gtuId) -> new CommandsHandler(this.network, new Commands(gtuId, null), null);
-            this.commandHandlers.computeIfAbsent(id, function).executeCommand(command);
+            this.commandHandlers.computeIfAbsent(id, function).scheduleCommand(command);
         }
 
         /**
@@ -925,6 +926,7 @@ public class OtsTransceiver
                 {
                     return;
                 }
+                // TODO check that the GTU is not dead-reckoning as part of the hybrid mode
                 sendOperationalPlanMessage(gtuId);
             }
             else if (eventType.equals(Network.GTU_ADD_EVENT))
