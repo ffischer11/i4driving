@@ -100,6 +100,12 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     /** Applies dead-reckoning to follow an external source of vehicle movement. */
     private boolean deadReckoning;
 
+    /**
+     * Whether dead-reckoning is part of a hybrid mode where the external simulation determines movement based on the intention
+     * of a model plan.
+     */
+    private boolean hybrid;
+
     /** Speed for dead-reckoning. */
     private Speed deadReckoningSpeed;
 
@@ -142,7 +148,8 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         if (!this.deadReckoning || this.lastDeadReckoningModelExecution == null
                 || startTime.minus(this.lastDeadReckoningModelExecution).si >= DEAD_RECKONING_MODEL_STEP.si)
         {
-            this.lastDeadReckoningModelExecution = startTime;
+            this.lastDeadReckoningModelExecution = this.lastDeadReckoningModelExecution == null ? startTime
+                    : this.lastDeadReckoningModelExecution.plus(DEAD_RECKONING_MODEL_STEP); // prevent drift due to delay
 
             // obtain objects to get info
             SpeedLimitProspect slp = getPerception().getPerceptionCategory(InfrastructurePerception.class)
@@ -258,7 +265,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             simplePlan.setTurnIndicator(getGtu());
 
             // create plan
-            if (!this.deadReckoning)
+            if (!this.deadReckoning || this.hybrid)
             {
                 OperationalPlan operationalPlan =
                         LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
@@ -633,9 +640,13 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Starts dead reckoning.
+     * @param hybrid whether dead-reckoning is part of a hybrid mode where the external simulation determines movement based on
+     *            the intention of a model plan
      */
-    public void startDeadReckoning()
+    public void startDeadReckoning(final boolean hybrid)
     {
+        this.lastDeadReckoningModelExecution = null;
+        this.hybrid = hybrid;
         deadReckoning(getGtu().getLocation(), getGtu().getSpeed(), Acceleration.ZERO);
     }
 
@@ -659,6 +670,8 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void stopDeadReckoning()
     {
         this.deadReckoning = false;
+        this.lastDeadReckoningModelExecution = null;
+        this.hybrid = false;
         interruptMove(getGtu().getLocation());
     }
 

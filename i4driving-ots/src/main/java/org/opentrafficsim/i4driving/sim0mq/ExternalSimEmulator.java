@@ -656,6 +656,7 @@ public final class ExternalSimEmulator
                             Object[] payload = new Object[] {this.gtuId, positionX, positionY, dir, speed, accel};
                             Worker.this.responder.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, OTS, EXTERNAL_SIM,
                                     "EXTERNAL", Worker.this.messageId++, payload), ZMQ.DONTWAIT);
+                            CategoryLogger.always().debug("ExternalSim sent EXTERNAL message for GTU " + this.gtuId);
                         }
                         catch (Sim0MQException | SerializationException e)
                         {
