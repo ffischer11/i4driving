@@ -463,25 +463,32 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void setDesiredSpeed(final Speed speed)
     {
         clearCache();
-        try
+        if (getCarFollowingModel() instanceof CarFollowingNgoduy ngoduy)
         {
-            Field modelField = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
-            modelField.setAccessible(true);
-            this.desiredSpeedModel = (DesiredSpeedModel) modelField.get(getCarFollowingModel());
+            ngoduy.setDesiredSpeed(speed);
         }
-        catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+        else
         {
-            throw new RuntimeException(e);
-        }
-        setDesiredSpeedModel(new DesiredSpeedModel()
-        {
-            /** {@inheritDoc} */
-            @Override
-            public Speed desiredSpeed(final Parameters parameters, final SpeedLimitInfo speedInfo) throws ParameterException
+            try
             {
-                return speed;
+                Field modelField = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
+                modelField.setAccessible(true);
+                this.desiredSpeedModel = (DesiredSpeedModel) modelField.get(getCarFollowingModel());
             }
-        });
+            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            {
+                throw new RuntimeException(e);
+            }
+            setDesiredSpeedModel(new DesiredSpeedModel()
+            {
+                /** {@inheritDoc} */
+                @Override
+                public Speed desiredSpeed(final Parameters parameters, final SpeedLimitInfo speedInfo) throws ParameterException
+                {
+                    return speed;
+                }
+            });
+        }
         interruptMove(getGtu().getLocation());
     }
 
@@ -490,10 +497,17 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void resetDesiredSpeed()
     {
-        Throw.when(this.desiredSpeedModel == null, IllegalStateException.class,
-                "Attempting to reset desired speed, but no desired speed was ever set.");
         clearCache();
-        setDesiredSpeedModel(this.desiredSpeedModel);
+        if (getCarFollowingModel() instanceof CarFollowingNgoduy ngoduy)
+        {
+            ngoduy.resetDesiredSpeed();
+        }
+        else
+        {
+            Throw.when(this.desiredSpeedModel == null, IllegalStateException.class,
+                    "Attempting to reset desired speed, but no desired speed was ever set.");
+            setDesiredSpeedModel(this.desiredSpeedModel);
+        }
         interruptMove(getGtu().getLocation());
     }
 
