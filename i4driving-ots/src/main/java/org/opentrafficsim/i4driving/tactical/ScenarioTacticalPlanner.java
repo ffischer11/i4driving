@@ -463,8 +463,9 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void setDesiredSpeed(final Speed speed)
     {
         clearCache();
-        if (getCarFollowingModel() instanceof CarFollowingNgoduy ngoduy)
+        if (getCarFollowingModel() instanceof CarFollowingNgoduy)
         {
+        	CarFollowingNgoduy ngoduy = (CarFollowingNgoduy) getCarFollowingModel();
             ngoduy.setDesiredSpeed(speed);
         }
         else
