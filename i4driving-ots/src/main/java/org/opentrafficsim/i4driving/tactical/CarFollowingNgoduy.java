@@ -43,6 +43,9 @@ public class CarFollowingNgoduy implements CarFollowingModel
     /** Base car-following model. */
     private final CarFollowingModel baseModel;
 
+    /** Overruled desired speed. */
+    private Speed desiredSpeed;
+
     /**
      * Constructor.
      * @param baseModel base car-following model
@@ -74,7 +77,24 @@ public class CarFollowingNgoduy implements CarFollowingModel
     @Override
     public Speed desiredSpeed(final Parameters parameters, final SpeedLimitInfo speedInfo) throws ParameterException
     {
-        return this.baseModel.desiredSpeed(parameters, speedInfo);
+        return this.desiredSpeed == null ? this.baseModel.desiredSpeed(parameters, speedInfo) : this.desiredSpeed;
+    }
+    
+    /**
+     * Set desired speed.
+     * @param desiredSpeed desired speed
+     */
+    public void setDesiredSpeed(final Speed desiredSpeed)
+    {
+        this.desiredSpeed = desiredSpeed;
+    }
+    
+    /**
+     * Resets the desired speed.
+     */
+    public void resetDesiredSpeed()
+    {
+        this.desiredSpeed = null;
     }
 
     @Override

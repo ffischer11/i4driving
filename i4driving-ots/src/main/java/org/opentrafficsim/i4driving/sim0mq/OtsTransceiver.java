@@ -329,6 +329,7 @@ public class OtsTransceiver
                             this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
                                     new Object[] {id, loc, speed, acceleration});
                         }
+                        CategoryLogger.always().debug("Ots received EXTERNAL message for GTU " + id);
                     }
                     else if ("VEHICLE".equals(message.getMessageTypeId()))
                     {
@@ -709,7 +710,7 @@ public class OtsTransceiver
             Commands.Command command = this.gson.fromJson(json, Commands.Command.class);
             Function<String, CommandsHandler> function =
                     (gtuId) -> new CommandsHandler(this.network, new Commands(gtuId, null), null);
-            this.commandHandlers.computeIfAbsent(id, function).executeCommand(command);
+            this.commandHandlers.computeIfAbsent(id, function).scheduleCommand(command);
         }
 
         /**
@@ -735,7 +736,7 @@ public class OtsTransceiver
                     this.planGtuIds.add(id);
                     if (this.externalGtuIds.add(id))
                     {
-                        getTacticalPlanner(id).startDeadReckoning();
+                        getTacticalPlanner(id).startDeadReckoning(true);
                     }
                     break;
                 }
@@ -744,7 +745,7 @@ public class OtsTransceiver
                     this.planGtuIds.remove(id);
                     if (this.externalGtuIds.add(id))
                     {
-                        getTacticalPlanner(id).startDeadReckoning();
+                        getTacticalPlanner(id).startDeadReckoning(false);
                     }
                     break;
                 }
@@ -938,6 +939,7 @@ public class OtsTransceiver
                 {
                     return;
                 }
+                // TODO check that the GTU is not dead-reckoning as part of the hybrid mode
                 sendOperationalPlanMessage(gtuId);
             }
             else if (eventType.equals(Network.GTU_ADD_EVENT))
@@ -1082,7 +1084,7 @@ public class OtsTransceiver
                 byte[] bytes = Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
                         OtsTransceiver.this.ots, OtsTransceiver.this.client, "PLAN", this.messageId++, payload);
                 String log =
-                        String.format("[%.3fs] Ots sent PLAN message for GTU %s", this.simulator.getSimulatorTime().si, gtuId);
+                        String.format("[%.3fs] Ots sent PLAN message for GTU %s (a=%.3fm/s^2)", this.simulator.getSimulatorTime().si, gtuId, a[0]);
                 this.queue.add(new QueuedMessage(bytes, log));
             }
             catch (Sim0MQException | SerializationException ex)
