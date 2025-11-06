@@ -402,6 +402,14 @@ public class OtsTransceiver
                     else if ("RESET".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received RESET message");
+                        Object[] payload = message.createObjectArray();
+                        boolean keepVehicles = true; 
+                        if(payload.length > 8) 
+                          keepVehicles = (Boolean) payload[8];
+                        if(!keepVehicles) {
+                        	CategoryLogger.always().debug("Ots received RESET and clears pre-start vehicles");
+                            this.preStartVehiclePayloads.clear();
+                        }
                         setupSimulation();
                         sentReadyMessage((int) message.createObjectArray()[6], false);
                     }
@@ -502,7 +510,12 @@ public class OtsTransceiver
             {
                 parameterMap.put((String) payload[index++], payload[index++]);
             }
-            Route route = this.network.getRoute((String) payload[index++]);
+            String routeName = (String) payload[index++];
+            Route route = this.network.getRoute(routeName);
+            if(route == null) {
+            	CategoryLogger.always().error("Cannot place vehicle '" + id + "', route '" + routeName + "' is not defined in routes.json");
+            	return;
+            }
 
             this.externallyGeneratedGtuId = id;
             if (running)

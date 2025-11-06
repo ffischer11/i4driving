@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -327,9 +328,9 @@ public final class OpenDriveParser
      * @param designDirection direction on road for origin, may be {@code null} if the road is not an origin in both directions
      * @return node that was created at the side of the road of given id from which traffic can enter the network
      */
-    public Node getOrigin(final String roadId, final Boolean designDirection)
+    public Node getOrigin(final String roadName, final Boolean designDirection)
     {
-        Map<Boolean, Node> map = this.origins.get(roadId);
+        Map<Boolean, Node> map = this.origins.get(roadName);
         if (map.size() == 1)
         {
             return map.values().iterator().next();
@@ -344,14 +345,22 @@ public final class OpenDriveParser
      *            directions
      * @return node that was created at the side of the road of given id from which traffic can exit the network
      */
-    public Node getDestination(final String roadId, final Boolean designDirection)
+    public Node getDestination(final String roadName, final Boolean designDirection)
     {
-        Map<Boolean, Node> map = this.destinations.get(roadId);
+        Map<Boolean, Node> map = this.destinations.get(roadName);
         if (map.size() == 1)
         {
             return map.values().iterator().next();
         }
         return map.get(designDirection);
+    }
+    
+    /** Gets the nicest possible way to refer to the road.
+     * If the road has a name, returns that name.
+     * Otherwise returns its id.
+     */
+    static public String getNameOrId(TRoad road) {
+    	return (road.getName().isBlank() ? road.getId() : road.getName());
     }
 
     /**
@@ -388,8 +397,10 @@ public final class OpenDriveParser
             Supplier<String> id;
             if (road.getId() != null && !road.getId().isBlank())
             {
-                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(road.getId() + "_")
-                        : () -> road.getId(); // just '1', or '1A', '1B', etc. when multiple links from this road
+            	final String nameOrId = getNameOrId(road); 
+            	
+                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(nameOrId + "_")
+                        : () -> nameOrId; // just '1', or '1A', '1B', etc. when multiple links from this road
             }
             else
             {
@@ -510,7 +521,7 @@ public final class OpenDriveParser
             }
             if (backward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
-                this.origins.computeIfAbsent(odRoadIdentifier(road), (s) -> new LinkedHashMap<>()).put(false, endNodeBackward);
+                this.origins.computeIfAbsent(getNameOrId(road), (s) -> new LinkedHashMap<>()).put(false, endNodeBackward);
             }
         }
     }
@@ -557,6 +568,7 @@ public final class OpenDriveParser
         FractionalLengthData prevEdgeOffset =
                 getEdgeOffset(linkData.laneSection.getCenter().getLane().get(0).getBorderOrWidth(), linkData.sFrom,
                         linkData.sTo, linkData.laneSection.getS(), linkData.sEndLaneSection, roadOffset, offsetSign);
+        prevEdgeOffset = cleanupLengthData(prevEdgeOffset);
         PolyLine2d prevEdge = forward ? linkData.linkDesignLine.flattenOffset(prevEdgeOffset, FLATTENER)
                 : linkData.linkDesignLine.flattenOffset(prevEdgeOffset, FLATTENER).reverse();
         TRoadLanesLaneSectionLcrLaneRoadMark centerMark =
@@ -1036,6 +1048,16 @@ public final class OpenDriveParser
             }
         }
         remove.forEach((f) -> map.remove(f));
+    }
+    
+    private FractionalLengthData cleanupLengthData(FractionalLengthData data) {
+    	TreeMap<Double, Double> m = new TreeMap<Double, Double>();
+    	double[] k = data.getFractionalLengthsAsArray(), v = data.getValuesAsArray();
+    	for(int i = 0; i < k.length; i++) {
+    		m.put(k[i], v[i]);
+    	}
+    	cleanOffSetMap(m);
+    	return new FractionalLengthData(m);
     }
 
     /**

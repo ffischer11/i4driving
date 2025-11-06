@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.djutils.exceptions.Throw;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;

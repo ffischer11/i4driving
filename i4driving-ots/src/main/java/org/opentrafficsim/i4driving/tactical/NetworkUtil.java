@@ -1,6 +1,7 @@
 package org.opentrafficsim.i4driving.tactical;
 
 import org.djutils.draw.point.Point2d;
+import org.djutils.logger.CategoryLogger;
 import org.opentrafficsim.core.geometry.OtsLine2d.FractionalFallback;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.road.network.RoadNetwork;
@@ -41,10 +42,14 @@ public final class NetworkUtil
                 {
                     double fraction = lane.getCenterLine().projectFractional(link.getStartNode().getHeading(),
                             link.getEndNode().getHeading(), position.x, position.y, FractionalFallback.ENDPOINT);
+                    // Points outside the lane are not relevant. Clamp to the length
+                    fraction = Math.clamp(fraction, 0, 1);
                     Point2d pointOnLane = lane.getCenterLine().getLocationFractionExtended(fraction);
                     double distance = pointOnLane.distance(position);
                     if (distance < minDistance)
                     {
+                        //CategoryLogger.always().debug("Better match found at lane " + link.getId() + ":" + lane.getId() + " fraction = " + fraction + " distance=" + distance);
+
                         minDistance = distance;
                         lanePosition = new LanePosition(lane, lane.getCenterLine().getLength().times(fraction));
                     }
